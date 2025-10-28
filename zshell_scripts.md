@@ -1,526 +1,494 @@
-This is a comprehensive, single-script solution for setting up a modern, high-performance Zsh environment on a fresh Kali Linux VM for both your normal user and the root user. It is designed to be **idempotent** (safe to re-run), **non-interactive**, and fully functional immediately upon completion.
+Here is the complete, single-script guide to setting up your Zsh environment on a fresh Kali Linux VM for
+both your normal user and root.
+
+This script is designed to be **idempotent**, meaning it's safe to re-run at any time without breaking your configuration.
 
 -----
 
-## 🚀 Zsh Power-Up Script for Kali Linux (User & Root)
+### 🚀 The Automated Setup Script
 
-This single script handles all dependencies, Oh My Zsh installation, plugin setup, permission fixes, and shell configuration for both your current user and the root user.
-
-**Important:** You must run this script as your **normal user** (which has `sudo` privileges).
+Copy the entire block below into a file (e.g., `setup_zsh.sh`), make it executable (`chmod +x setup_zsh.sh`), and run it as your normal user (`./setup_zsh.sh`).
 
 ```bash
 #!/bin/bash
-# Zsh Power-Up Script for Kali Linux on VMware
-# Sets up Zsh, Oh My Zsh, and essential plugins for both the normal user and root.
-# Designed to be idempotent and non-interactive.
+set -e
 
-# --- Configuration Variables ---
-USER_HOME=$(eval echo ~$USER)
-ROOT_HOME="/root"
+# === Color Defs ===
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-# Plugins to install (name/github_repo/clone_path)
-declare -A PLUGINS=(
-    ["zsh-autosuggestions"]="zsh-users/zsh-autosuggestions"
-    ["zsh-syntax-highlighting"]="zsh-users/zsh-syntax-highlighting"
-    ["fzf-tab"]="Aloxaf/fzf-tab"
-)
-# Special plugin: zsh-autocomplete (cloned outside of OMZ structure)
-AUTOCOMPLETE_REPO="marlonrichert/zsh-autocomplete"
-USER_AUTOCOMPLETE_DIR="$USER_HOME/.zsh/zsh-autocomplete"
-ROOT_AUTOCOMPLETE_DIR="$ROOT_HOME/.zsh/zsh-autocomplete"
-
-# --- Helper Functions ---
-
-# Function to run a command as root using sudo
-run_as_root() {
-    echo "  > Sudo: $1"
-    sudo bash -c "$1"
-    if [ $? -ne 0 ]; then
-        echo "!!! Warning: Command failed: $1"
-    fi
+# === Helper Functions ===
+info() {
+    echo -e "${CYAN}[INFO]${NC} $1"
 }
 
-# Function to clone or update a git repository
-clone_or_update() {
+success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+warn() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+error_exit() {
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+    exit 1
+}
+
+# Function to clone a git repo if the directory doesn't exist
+clone_repo() {
     local repo_url=$1
-    local target_dir=$2
-    local owner=$3 # user or root
+    local dest_dir=$2
+    local sudo_prefix=${3:-} # Optional sudo prefix
 
-    echo "  -> Setting up $repo_url for $owner in $target_dir..."
-
-    if [ "$owner" == "root" ]; then
-        # Run all clone/update operations as root for /root directory
-        local cmd="
-            if [ -d \"$target_dir/.git\" ]; then
-                echo \"    - Updating existing $repo_url...\"
-                cd \"$target_dir\" && git pull
-            else
-                echo \"    - Cloning $repo_url...\"
-                mkdir -p \"$(dirname "$target_dir")\"
-                git clone --depth 1 \"https://github.com/$repo_url\" \"$target_dir\"
-            fi
-        "
-        run_as_root "$cmd"
-    else
-        # Run all clone/update operations as current user
-        if [ -d "$target_dir/.git" ]; then
-            echo "    - Updating existing $repo_url..."
-            git -C "$target_dir" pull
-        else
-            echo "    - Cloning $repo_url..."
-            mkdir -p "$(dirname "$target_dir")"
-            git clone --depth 1 "https://github.com/$repo_url" "$target_dir"
+    if [ ! -d "$dest_dir" ]; then
+        info "Cloning $(basename $dest_dir)..."
+        if ! $sudo_prefix git clone --depth=1 "$repo_url" "$dest_dir"; then
+            error_exit "Failed to clone $repo_url"
         fi
+    else
+        info "$(basename $dest_dir) already exists. Skipping clone."
     fi
 }
 
-# Function to install Oh My Zsh (if not present)
-install_omz() {
-    local user_type=$1 # user or root
-    local target_dir=$2
+# === Start Setup ===
+info "Starting Zsh & Oh My Zsh setup for USER and ROOT..."
+info "This script will use 'sudo' to install packages and configure the root account."
 
-    if [ ! -d "$target_dir/.oh-my-zsh" ]; then
-        echo "### Installing Oh My Zsh for $user_type..."
-        if [ "$user_type" == "root" ]; then
-            # Run the OMZ install script as root for /root
-            run_as_root "
-                # Clone without running the installer script
-                git clone --depth 1 https://github.com/ohmyzsh/ohmyzsh.git \"$target_dir/.oh-my-zsh\"
-                # Create a default zshrc so the shell starts cleanly after chsh
-                if [ ! -f \"$target_dir/.zshrc\" ]; then
-                    cp \"$target_dir/.oh-my-zsh/templates/zshrc.zsh-template\" \"$target_dir/.zshrc\"
-                fi
-                chown -R root:root \"$target_dir/.oh-my-zsh\" # Ensure correct ownership
-            "
-        else
-            # Run OMZ install for current user
-            git clone --depth 1 https://github.com/ohmyzsh/ohmyzsh.git "$target_dir/.oh-my-zsh"
-            if [ ! -f "$target_dir/.zshrc" ]; then
-                cp "$target_dir/.oh-my-zsh/templates/zshrc.zsh-template" "$target_dir/.zshrc"
-            fi
-        fi
-    else
-        echo "### Oh My Zsh already exists for $user_type. Skipping install."
-    fi
-}
+# === 1. Install Dependencies ===
+info "Updating package lists and installing dependencies..."
+if ! sudo apt-get update; then
+    error_exit "Failed to update apt package lists."
+fi
 
-# --- Main Script Start ---
-echo "=================================================="
-echo " Starting Zsh Environment Setup for Kali Linux VM"
-echo "=================================================="
+if ! sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    zsh \
+    curl \
+    git \
+    fzf \
+    python3-pip \
+    python3-dev \
+    python3-setuptools \
+    bash-completion \
+    open-vm-tools-desktop; then
+    error_exit "Failed to install base dependencies."
+fi
 
-# 1. Install Core Dependencies
-echo "## 1. Installing/Updating Core Dependencies (zsh, git, curl, fzf, etc.)"
-run_as_root "
-    export DEBIAN_FRONTEND=noninteractive
-    apt update
-    apt install -y zsh git curl fzf bash-completion python3-pip
-    pip3 install --upgrade thefuck
-"
+# Ensure /usr/bin/zsh is in /etc/shells
+if ! grep -q "$(which zsh)" /etc/shells; then
+    info "Adding $(which zsh) to /etc/shells"
+    echo "$(which zsh)" | sudo tee -a /etc/shells
+fi
 
-# 2. Install/Update Oh My Zsh
-install_omz "user" "$USER_HOME"
-install_omz "root" "$ROOT_HOME"
+# === 2. Install 'thefuck' (Optional) ===
+info "Installing 'thefuck' via pip3..."
+if ! sudo pip3 install -U thefuck; then
+    warn "Failed to install 'thefuck'. Continuing without it."
+fi
 
-# 3. Install/Update Plugins
+# === 3. Define .zshrc Configuration ===
+# We define this ONCE. Using 'EOF' (with single quotes) prevents
+# $HOME from being expanded by bash, allowing zsh to expand it at runtime.
+# This makes the file perfectly portable between /home/user and /root.
 
-# --- Current User Plugins ---
-echo "## 3. Setting up Plugins for Current User ($USER)"
-USER_CUSTOM_DIR="$USER_HOME/.oh-my-zsh/custom/plugins"
-mkdir -p "$USER_CUSTOM_DIR"
-for plugin in "${!PLUGINS[@]}"; do
-    clone_or_update "${PLUGINS[$plugin]}" "$USER_CUSTOM_DIR/$plugin" "user"
-done
-clone_or_update "$AUTOCOMPLETE_REPO" "$USER_AUTOCOMPLETE_DIR" "user"
-
-# --- Root User Plugins ---
-echo "## 4. Setting up Plugins for Root User"
-ROOT_CUSTOM_DIR="$ROOT_HOME/.oh-my-zsh/custom/plugins"
-run_as_root "mkdir -p $ROOT_CUSTOM_DIR"
-for plugin in "${!PLUGINS[@]}"; do
-    # Cloning as root directly into /root's custom directory
-    clone_or_update "${PLUGINS[$plugin]}" "$ROOT_CUSTOM_DIR/$plugin" "root"
-done
-clone_or_update "$AUTOCOMPLETE_REPO" "$ROOT_AUTOCOMPLETE_DIR" "root"
-
-# Correct root ownership after cloning if necessary (ensures safety)
-run_as_root "chown -R root:root $ROOT_HOME/.oh-my-zsh $ROOT_HOME/.zsh"
-
-# 5. Write .zshrc Configuration Files
-
-# --- User .zshrc ---
-echo "## 5. Writing Zsh Configuration for User"
-cat << 'EOF_USER' > "$USER_HOME/.zshrc"
-# =======================================================
-# Zsh Configuration for Normal User - Kali Linux VM
-# =======================================================
-
-# --- Oh My Zsh Settings ---
+read -r -d '' ZSHRC_CONTENT <<'EOF'
+# === Oh My Zsh Config ===
+# Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME="agnoster" # A good, simple theme with path/git status
-# Core Plugins (OMZ + Custom) - Order is crucial for some features
-plugins=(
-    git
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-    # fzf-tab is loaded as a custom script later
-)
 
-source $ZSH/oh-my-zsh.sh
+# Set name of the theme to load.
+# "kali" is clean and functional.
+ZSH_THEME="kali"
 
-# --- Custom Plugin Sources and Configuration ---
+# Standard ZSH_CUSTOM location
+export ZSH_CUSTOM=${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}
 
-# zsh-autocomplete (Cloned outside of OMZ structure)
-AUTOCOMPLETE_DIR="$HOME/.zsh/zsh-autocomplete"
-if [ -f "$AUTOCOMPLETE_DIR/zsh-autocomplete.plugin.zsh" ]; then
-    source "$AUTOCOMPLETE_DIR/zsh-autocomplete.plugin.zsh"
-fi
+# Disable Oh My Zsh's built-in plugin loading to speed up startup
+# We will source plugins manually for better control.
+plugins=()
 
-# fzf-tab (Loaded as a custom plugin)
-if [ -f "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh" ]; then
-    source "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh"
-    # Basic FZF-Tab Configuration
-    zstyle ':fzf-tab:complete:*:*' fzf-preview 'bat --color=always --style=numbers --line-range :50 {}' 2>/dev/null || \
-    zstyle ':fzf-tab:complete:*:*' fzf-preview 'head -50 {}'
-fi
-
-# --- FZF Keybindings and Configuration ---
-# Uses the built-in fzf key-bindings from the package install
-# CTRL-R (history search) should now show a fuzzy list.
-export FZF_DEFAULT_OPTS='--layout=reverse --info=inline'
-
-# --- The Fuck (Python tool for correcting commands) ---
-eval $(thefuck --alias)
-
-# --- History Tweak ---
+# === History Settings ===
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
 SAVEHIST=10000
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_FIND_NO_DUPS
+setopt HIST_SAVE_NO_DUPS
 
-# --- Helpful Aliases ---
-alias update='sudo apt update && sudo apt upgrade -y'
+# === Source Oh My Zsh ===
+# This MUST come before sourcing custom plugins
+# But AFTER setting theme and plugin variables.
+if [ -f "$ZSH/oh-my-zsh.sh" ]; then
+    source "$ZSH/oh-my-zsh.sh"
+else
+    echo "[ERROR] Oh My Zsh not found at $ZSH" >&2
+fi
+
+# === Load Plugins (Manual Sourcing) ===
+# We source them in the recommended order.
+
+# 1. zsh-autosuggestions (Suggests commands as you type)
+if [ -f "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
+    source "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
+fi
+
+# 2. zsh-syntax-highlighting (Highlights commands)
+# *MUST* be sourced at the end, or at least after autosuggestions.
+if [ -f "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
+    source "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi
+
+# 3. zsh-autocomplete (Marlon Richert's powerful autocomplete)
+# Sourced *before* fzf-tab
+if [ -f "${ZDOTDIR:-$HOME}/.zsh/zsh-autocomplete/zsh-autocomplete.plugin.zsh" ]; then
+    source "${ZDOTDIR:-$HOME}/.zsh/zsh-autocomplete/zsh-autocomplete.plugin.zsh"
+fi
+
+# 4. fzf-tab (Use fzf for tab completions)
+# Sourced *after* zsh-autocomplete
+if [ -f "$ZSH_CUSTOM/plugins/fzf-tab/fzf-tab.plugin.zsh" ]; then
+    source "$ZSH_CUSTOM/plugins/fzf-tab/fzf-tab.plugin.zsh"
+    # Optional: configure fzf-tab
+    zstyle ':completion:*:*' fzf-preview 1
+fi
+
+# === fzf Keybindings (from apt package) ===
+# This enables Ctrl+R history search
+if [ -f /usr/share/fzf/key-bindings.zsh ]; then
+    source /usr/share/fzf/key-bindings.zsh
+fi
+
+# === Aliases ===
 alias ll='ls -alF'
-alias grep='grep --color=auto'
+alias l='ls -CF'
+alias la='ls -A'
 alias gs='git status'
-alias gcl='git clone'
-alias tf='thefuck'
-alias kali-ip='ip a | grep "inet " | grep -v 127.0.0.1'
-
-# --- Kali/VMware Specific Tweaks (Optional) ---
-# Prevents some terminal size/drawing issues in VMs
-# if [ -n "$KALI_VMWARE" ]; then # Not perfect for detection, but safe to include.
-#     export TERM="xterm-256color"
-# fi
-
-# --- Final Message ---
-echo "Welcome to Zsh! Type 'tf' after an error to fix it."
-# =======================================================
-EOF_USER
-
-# --- Root .zshrc ---
-echo "## 6. Writing Zsh Configuration for Root"
-ROOT_ZSHRC_CONTENT=$(cat << EOF_ROOT
-# =======================================================
-# Zsh Configuration for Root User - Kali Linux VM
-# =======================================================
-
-# --- Oh My Zsh Settings ---
-export ZSH="/root/.oh-my-zsh"
-ZSH_THEME="robbyrussell" # Simpler theme for root for less visual clutter
-# Core Plugins (OMZ + Custom) - Order is crucial for some features
-plugins=(
-    git
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-)
-
-source \$ZSH/oh-my-zsh.sh
-
-# --- Custom Plugin Sources and Configuration ---
-
-# zsh-autocomplete (Cloned outside of OMZ structure)
-AUTOCOMPLETE_DIR="/root/.zsh/zsh-autocomplete"
-if [ -f "\$AUTOCOMPLETE_DIR/zsh-autocomplete.plugin.zsh" ]; then
-    source "\$AUTOCOMPLETE_DIR/zsh-autocomplete.plugin.zsh"
-fi
-
-# fzf-tab (Loaded as a custom plugin)
-if [ -f "\${ZSH_CUSTOM:-/root/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh" ]; then
-    source "\${ZSH_CUSTOM:-/root/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh"
-    # Basic FZF-Tab Configuration (no 'bat' for root safety/simplicity)
-    zstyle ':fzf-tab:complete:*:*' fzf-preview 'head -50 {}'
-fi
-
-# --- FZF Keybindings and Configuration ---
-export FZF_DEFAULT_OPTS='--layout=reverse --info=inline'
-
-# --- The Fuck (Python tool for correcting commands) ---
-eval \$(thefuck --alias)
-
-# --- History Tweak ---
-HISTFILE=/root/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
-
-# --- Helpful Aliases ---
-alias update='apt update && apt upgrade -y'
-alias ll='ls -alF'
 alias grep='grep --color=auto'
-alias gs='git status'
-alias gcl='git clone'
-alias tf='thefuck'
-alias kali-ip='ip a | grep "inet " | grep -v 127.0.0.1'
+alias ..='cd ..'
+alias ...='cd ../..'
 
-# --- Final Message ---
-echo "Root Zsh ready."
-# =======================================================
-EOF_ROOT
-# Write the content to /root/.zshrc as root
-run_as_root "echo \"$ROOT_ZSHRC_CONTENT\" > \"$ROOT_HOME/.zshrc\""
-# Ensure correct ownership and permissions
-run_as_root "chown root:root $ROOT_HOME/.zshrc"
+# === 'thefuck' Alias (Optional) ===
+# Uncomment the line below if you installed 'thefuck' and want to use it.
+# eval $(thefuck --alias)
 
-# 7. Change Default Shell
-echo "## 7. Changing Default Shells to Zsh"
-if [ "$SHELL" != "/usr/bin/zsh" ]; then
-    echo "  -> Changing default shell for $USER to /usr/bin/zsh"
-    chsh -s /usr/bin/zsh
+EOF
+
+# === 4. Setup for Current USER ===
+info "Setting up Zsh for current user ($USER)..."
+USER_HOME=$HOME
+USER_ZSH=$USER_HOME/.oh-my-zsh
+USER_ZSH_CUSTOM=$USER_ZSH/custom
+USER_ZSH_AUTOCOMPLETE=$USER_HOME/.zsh/zsh-autocomplete
+
+# Install Oh My Zsh for USER
+clone_repo "https://github.com/ohmyzsh/ohmyzsh.git" "$USER_ZSH"
+
+# Install Plugins for USER
+sudo mkdir -p "$USER_ZSH_CUSTOM/plugins"
+clone_repo "https://github.com/zsh-users/zsh-autosuggestions.git" "$USER_ZSH_CUSTOM/plugins/zsh-autosuggestions"
+clone_repo "https://github.com/zsh-users/zsh-syntax-highlighting.git" "$USER_ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+clone_repo "https://github.com/Aloxaf/fzf-tab.git" "$USER_ZSH_CUSTOM/plugins/fzf-tab"
+
+# Install zsh-autocomplete for USER
+sudo mkdir -p "$USER_ZSH_AUTOCOMPLETE"
+clone_repo "https://github.com/marlonrichert/zsh-autocomplete.git" "$USER_ZSH_AUTOCOMPLETE"
+
+# Fix user permissions (git clone as user, but mkdir as sudo)
+info "Fixing permissions for $USER_HOME..."
+if ! sudo chown -R "$USER:$USER" "$USER_HOME/.oh-my-zsh" "$USER_HOME/.zsh"; then
+    warn "Could not chown user directories. This might be fine."
 fi
-run_as_root "
-    if [ \"$(getent passwd root | cut -d: -f7)\" != \"/usr/bin/zsh\" ]; then
-        echo \"  -> Changing default shell for root to /usr/bin/zsh\"
-        chsh -s /usr/bin/zsh root
+
+# Write .zshrc for USER
+info "Writing $USER_HOME/.zshrc..."
+echo "$ZSHRC_CONTENT" > "$USER_HOME/.zshrc"
+
+# Change default shell for USER
+if [ "$(basename "$SHELL")" != "zsh" ]; then
+    info "Changing default shell to zsh for $USER..."
+    if ! sudo chsh -s "$(which zsh)" "$USER"; then
+        error_exit "Failed to change shell for $USER."
     fi
-"
+else
+    info "Default shell for $USER is already zsh."
+fi
+success "User setup complete."
 
-# 8. Final Summary
-echo "=================================================="
-echo " ✅ Setup Complete! Please **RESTART YOUR TERMINAL** or run 'zsh' now."
-echo " The next time you log in or open a terminal, Zsh will be your shell."
-echo " To test the root shell, run: **sudo su -**"
-echo "=================================================="
+# === 5. Setup for ROOT ===
+info "Setting up Zsh for ROOT user..."
+ROOT_HOME=/root
+ROOT_ZSH=$ROOT_HOME/.oh-my-zsh
+ROOT_ZSH_CUSTOM=$ROOT_ZSH/custom
+ROOT_ZSH_AUTOCOMPLETE=$ROOT_HOME/.zsh/zsh-autocomplete
+
+# Install Oh My Zsh for ROOT
+clone_repo "https://github.com/ohmyzsh/ohmyzsh.git" "$ROOT_ZSH" "sudo"
+
+# Install Plugins for ROOT
+sudo mkdir -p "$ROOT_ZSH_CUSTOM/plugins"
+clone_repo "https://github.com/zsh-users/zsh-autosuggestions.git" "$ROOT_ZSH_CUSTOM/plugins/zsh-autosuggestions" "sudo"
+clone_repo "https://github.com/zsh-users/zsh-syntax-highlighting.git" "$ROOT_ZSH_CUSTOM/plugins/zsh-syntax-highlighting" "sudo"
+clone_repo "https://github.com/Aloxaf/fzf-tab.git" "$ROOT_ZSH_CUSTOM/plugins/fzf-tab" "sudo"
+
+# Install zsh-autocomplete for ROOT
+sudo mkdir -p "$ROOT_ZSH_AUTOCOMPLETE"
+clone_repo "https://github.com/marlonrichert/zsh-autocomplete.git" "$ROOT_ZSH_AUTOCOMPLETE" "sudo"
+
+# Write .zshrc for ROOT
+info "Writing $ROOT_HOME/.zshrc..."
+echo "$ZSHRC_CONTENT" | sudo tee "$ROOT_HOME/.zshrc" > /dev/null
+
+# Change default shell for ROOT
+if [ "$(sudo awk -F: -v user=root '$1 == user {print $NF}' /etc/passwd)" != "$(which zsh)" ]; then
+    info "Changing default shell to zsh for root..."
+    if ! sudo chsh -s "$(which zsh)" root; then
+        error_exit "Failed to change shell for root."
+    fi
+else
+    info "Default shell for root is already zsh."
+fi
+success "Root setup complete."
+
+# === 6. Final Steps ===
+success "All done!"
+info "Please log out and log back in (or restart your terminal) for all changes to take effect."
+info "Your default shell is now Zsh for both $USER and root."
+
 ```
 
 -----
 
-## 📄 Final `.zshrc` Configurations
+### ⚙️ Final `.zshrc` Configuration Files
 
-### 1\. Normal User (`~/.zshrc`)
+The script above generates the *exact same* file for both user and root. This is the intended behavior, as the file uses variables like `$HOME` which Zsh expands correctly for whichever user is active.
 
-```bash
-# =======================================================
-# Zsh Configuration for Normal User - Kali Linux VM
-# =======================================================
+#### `~/.zshrc` (User)
 
-# --- Oh My Zsh Settings ---
+```zsh
+# === Oh My Zsh Config ===
+# Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME="agnoster" # A good, simple theme with path/git status
-# Core Plugins (OMZ + Custom) - Order is crucial for some features
-plugins=(
-    git
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-    # fzf-tab is loaded as a custom script later
-)
 
-source $ZSH/oh-my-zsh.sh
+# Set name of the theme to load.
+# "kali" is clean and functional.
+ZSH_THEME="kali"
 
-# --- Custom Plugin Sources and Configuration ---
+# Standard ZSH_CUSTOM location
+export ZSH_CUSTOM=${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}
 
-# zsh-autocomplete (Cloned outside of OMZ structure)
-AUTOCOMPLETE_DIR="$HOME/.zsh/zsh-autocomplete"
-if [ -f "$AUTOCOMPLETE_DIR/zsh-autocomplete.plugin.zsh" ]; then
-    source "$AUTOCOMPLETE_DIR/zsh-autocomplete.plugin.zsh"
-fi
+# Disable Oh My Zsh's built-in plugin loading to speed up startup
+# We will source plugins manually for better control.
+plugins=()
 
-# fzf-tab (Loaded as a custom plugin)
-if [ -f "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh" ]; then
-    source "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh"
-    # Basic FZF-Tab Configuration
-    zstyle ':fzf-tab:complete:*:*' fzf-preview 'bat --color=always --style=numbers --line-range :50 {}' 2>/dev/null || \
-    zstyle ':fzf-tab:complete:*:*' fzf-preview 'head -50 {}'
-fi
-
-# --- FZF Keybindings and Configuration ---
-# Uses the built-in fzf key-bindings from the package install
-# CTRL-R (history search) should now show a fuzzy list.
-export FZF_DEFAULT_OPTS='--layout=reverse --info=inline'
-
-# --- The Fuck (Python tool for correcting commands) ---
-eval $(thefuck --alias)
-
-# --- History Tweak ---
+# === History Settings ===
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
 SAVEHIST=10000
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_FIND_NO_DUPS
+setopt HIST_SAVE_NO_DUPS
 
-# --- Helpful Aliases ---
-alias update='sudo apt update && sudo apt upgrade -y'
-alias ll='ls -alF'
-alias grep='grep --color=auto'
-alias gs='git status'
-alias gcl='git clone'
-alias tf='thefuck'
-alias kali-ip='ip a | grep "inet " | grep -v 127.0.0.1'
-
-# --- Kali/VMware Specific Tweaks (Optional) ---
-# Prevents some terminal size/drawing issues in VMs
-# if [ -n "$KALI_VMWARE" ]; then # Not perfect for detection, but safe to include.
-#     export TERM="xterm-256color"
-# fi
-
-# --- Final Message ---
-echo "Welcome to Zsh! Type 'tf' after an error to fix it."
-# =======================================================
-```
-
-### 2\. Root User (`/root/.zshrc`)
-
-```bash
-# =======================================================
-# Zsh Configuration for Root User - Kali Linux VM
-# =======================================================
-
-# --- Oh My Zsh Settings ---
-export ZSH="/root/.oh-my-zsh"
-ZSH_THEME="robbyrussell" # Simpler theme for root for less visual clutter
-# Core Plugins (OMZ + Custom) - Order is crucial for some features
-plugins=(
-    git
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-)
-
-source $ZSH/oh-my-zsh.sh
-
-# --- Custom Plugin Sources and Configuration ---
-
-# zsh-autocomplete (Cloned outside of OMZ structure)
-AUTOCOMPLETE_DIR="/root/.zsh/zsh-autocomplete"
-if [ -f "$AUTOCOMPLETE_DIR/zsh-autocomplete.plugin.zsh" ]; then
-    source "$AUTOCOMPLETE_DIR/zsh-autocomplete.plugin.zsh"
+# === Source Oh My Zsh ===
+# This MUST come before sourcing custom plugins
+# But AFTER setting theme and plugin variables.
+if [ -f "$ZSH/oh-my-zsh.sh" ]; then
+    source "$ZSH/oh-my-zsh.sh"
+else
+    echo "[ERROR] Oh My Zsh not found at $ZSH" >&2
 fi
 
-# fzf-tab (Loaded as a custom plugin)
-if [ -f "${ZSH_CUSTOM:-/root/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh" ]; then
-    source "${ZSH_CUSTOM:-/root/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh"
-    # Basic FZF-Tab Configuration (no 'bat' for root safety/simplicity)
-    zstyle ':fzf-tab:complete:*:*' fzf-preview 'head -50 {}'
+# === Load Plugins (Manual Sourcing) ===
+# We source them in the recommended order.
+
+# 1. zsh-autosuggestions (Suggests commands as you type)
+if [ -f "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
+    source "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
 fi
 
-# --- FZF Keybindings and Configuration ---
-export FZF_DEFAULT_OPTS='--layout=reverse --info=inline'
+# 2. zsh-syntax-highlighting (Highlights commands)
+# *MUST* be sourced at the end, or at least after autosuggestions.
+if [ -f "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
+    source "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi
 
-# --- The Fuck (Python tool for correcting commands) ---
-eval $(thefuck --alias)
+# 3. zsh-autocomplete (Marlon Richert's powerful autocomplete)
+# Sourced *before* fzf-tab
+if [ -f "${ZDOTDIR:-$HOME}/.zsh/zsh-autocomplete/zsh-autocomplete.plugin.zsh" ]; then
+    source "${ZDOTDIR:-$HOME}/.zsh/zsh-autocomplete/zsh-autocomplete.plugin.zsh"
+fi
 
-# --- History Tweak ---
-HISTFILE=/root/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
+# 4. fzf-tab (Use fzf for tab completions)
+# Sourced *after* zsh-autocomplete
+if [ -f "$ZSH_CUSTOM/plugins/fzf-tab/fzf-tab.plugin.zsh" ]; then
+    source "$ZSH_CUSTOM/plugins/fzf-tab/fzf-tab.plugin.zsh"
+    # Optional: configure fzf-tab
+    zstyle ':completion:*:*' fzf-preview 1
+fi
 
-# --- Helpful Aliases ---
-alias update='apt update && apt upgrade -y'
+# === fzf Keybindings (from apt package) ===
+# This enables Ctrl+R history search
+if [ -f /usr/share/fzf/key-bindings.zsh ]; then
+    source /usr/share/fzf/key-bindings.zsh
+fi
+
+# === Aliases ===
 alias ll='ls -alF'
-alias grep='grep --color=auto'
+alias l='ls -CF'
+alias la='ls -A'
 alias gs='git status'
-alias gcl='git clone'
-alias tf='thefuck'
-alias kali-ip='ip a | grep "inet " | grep -v 127.0.0.1'
+alias grep='grep --color=auto'
+alias ..='cd ..'
+alias ...='cd ../..'
 
-# --- Final Message ---
-echo "Root Zsh ready."
-# =======================================================
+# === 'thefuck' Alias (Optional) ===
+# Uncomment the line below if you installed 'thefuck' and want to use it.
+# eval $(thefuck --alias)
+
 ```
+
+#### `/root/.zshrc` (Root)
+
+This file is **identical** to the user's `~/.zshrc` above.
 
 -----
 
-## ✅ Verification Commands
+### ✅ Verification Commands
 
-After **restarting your terminal** (or running `zsh`), run these commands to verify the setup:
+After running the script, **log out and log back in** or **reboot the VM**. Then, open a terminal:
 
-```bash
-# 1. Check current shell (should show /usr/bin/zsh)
-echo $SHELL
-# 2. Check root shell (should show /usr/bin/zsh)
-sudo su - -c 'echo $SHELL'
-# 3. Check for plugins (all should return '0' for success)
-type _zsh_autosuggestions_start
-type zsh-syntax-highlighting
-type zsh-autocomplete
-# 4. Test functionality in the current shell:
-#   - Type 'echo' then press **Tab** (should show fzf-tab fuzzy completion list).
-#   - Start typing 'ls /u' (should see inline suggestion from autosuggestions).
-#   - Type 'ech' (should see autocomplete suggestions for 'echo' and 'ECHO').
-#   - Type 'lssss' and press **Enter**, then type **tf** and press **Enter** (should correct the command).
-# 5. Test functionality for root:
-#   - Run 'sudo su -' and repeat the tests above. No errors should appear on login.
-```
+1.  **Check Shell and Version:**
+
+    ```bash
+    echo $SHELL
+    # Expected: /usr/bin/zsh
+    echo $ZSH_VERSION
+    # Expected: 5.9 (or similar)
+    ```
+
+2.  **Check User Plugins:**
+
+    ```bash
+    ls -l ~/.oh-my-zsh/custom/plugins
+    # Expected: zsh-autosuggestions, zsh-syntax-highlighting, fzf-tab
+    ls -l ~/.zsh/zsh-autocomplete
+    # Expected: Files for zsh-autocomplete
+    ```
+
+3.  **Check Root Setup:**
+
+    ```bash
+    sudo su
+    ```
+
+      * **You should see no errors.**
+      * The prompt should be the Zsh (kali) theme, not a plain bash prompt.
+
+4.  **Check Root Plugins (while root):**
+
+    ```bash
+    ls -l ~/.oh-my-zsh/custom/plugins
+    # Expected: zsh-autosuggestions, zsh-syntax-highlighting, fzf-tab
+    ls -l ~/.zsh/zsh-autocomplete
+    # Expected: Files for zsh-autocomplete
+    exit
+    ```
+
+5.  **Test Functionality:**
+
+      * **Syntax Highlighting:** Type `ls` (should be green), then `lskdjf` (should be red).
+      * **Autosuggestions:** Type `sudo apt` and you should see a dim `install` (or similar) suggested from your history.
+      * **fzf History:** Press `Ctrl+R`. A fuzzy finder menu should appear.
+      * **fzf-tab:** Type `systemctl` (space) `start` (space) and press `Tab`. A fuzzy finder should appear for services.
+      * **Autocomplete:** Type ` git  ` and press `Tab`. You should see rich, categorized completions.
+      * **thefuck (if enabled):** Type `apt-get udpate` (typo). After it fails, type `fuck`. It should suggest `apt-get update`.
 
 -----
 
-## 🚫 Quick-Disable One-Liner (Exam Safety)
+### Disable Plugins (Exam Safety)
 
-To immediately start a **plain Zsh session** without sourcing the **plugins or Oh My Zsh**, which is useful for exam environments (OSCP/OSCE), run this:
+If you need to start a plain Zsh session without any plugins or configs (e.g., for an exam), run this:
 
 ```bash
 zsh -f
 ```
 
+This starts a "fresh" Zsh session, ignoring all `.zshrc` files. Type `exit` to return to your normal shell.
+
 -----
 
-## 🔧 Troubleshooting and Rollback
+### ⚠️ Troubleshooting and Rollback
 
-### 🚨 Known Issues and Fixes
+#### Known Issues & Fixes
 
-| Issue | Description | Exact Fix Command(s) |
-| :--- | :--- | :--- |
-| **`sudo su` errors** | Errors like `/root/.oh-my-zsh/oh-my-zsh.sh not found` appear when switching to root. | Rerun the setup script, which ensures OMZ is installed for root and the **`/root/.zshrc`** points to the correct location. |
-| **Plugin Permissions** | Plugins in `/root/.oh-my-zsh/custom` are owned by the normal user. | `sudo chown -R root:root /root/.oh-my-zsh /root/.zsh` (The script does this automatically, but you can run it manually if needed). |
-| **FZF Keybinding** | `Ctrl+R` history search is not working properly (not launching FZF). | Ensure the `fzf` package is installed: `sudo apt install -y fzf`. The script handles this, but a re-install might fix a corrupt install. |
-| **`/root` config errors** | When switching to root, the new shell doesn't pick up Zsh. | Check that the root shell is set: `sudo chsh -s /usr/bin/zsh root`. |
+  * **Issue:** `chsh: /usr/bin/zsh is not a legal shell`
 
-### 🔙 Safe Rollback/Uninstall
+      * **Fix:** The script automatically adds Zsh to `/etc/shells`, but if it fails manually run:
+        ```bash
+        echo "$(which zsh)" | sudo tee -a /etc/shells
+        ```
 
-Use these commands to fully revert the changes and restore **Bash** as your shell.
+  * **Issue:** Permission errors in your home directory.
+
+      * **Fix:** The script tries to fix this, but you can force it:
+        ```bash
+        sudo chown -R $USER:$USER $HOME/.oh-my-zsh $HOME/.zsh $HOME/.zshrc
+        ```
+
+  * **Issue:** Root shell is broken, but user shell is fine.
+
+      * **Fix:** Manually copy your working user config to root:
+        ```bash
+        sudo cp $HOME/.zshrc /root/.zshrc
+        ```
+
+#### Safe Rollback / Uninstall
+
+To completely undo all changes and return to Bash:
 
 ```bash
-#!/bin/bash
-echo "--- Starting Zsh Uninstall and Bash Restore ---"
-
-# 1. Restore Shells to Bash
-echo "Restoring default shell to /bin/bash for user and root..."
-chsh -s /bin/bash
+# 1. Revert default shells
+sudo chsh -s /bin/bash $USER
 sudo chsh -s /bin/bash root
 
-# 2. Remove Config Files (Optional - consider backing up first!)
-echo "Removing Zsh configuration files (USER and ROOT)..."
-rm -f ~/.zshrc ~/.zsh_history
+# 2. Remove configuration files
+rm -f $HOME/.zshrc $HOME/.zsh_history
 sudo rm -f /root/.zshrc /root/.zsh_history
 
-# 3. Remove Oh My Zsh and Plugin Directories
-echo "Removing Oh My Zsh and custom plugin directories..."
-rm -rf ~/.oh-my-zsh ~/.zsh
+# 3. Remove plugin and cache directories
+rm -rf $HOME/.oh-my-zsh $HOME/.zsh
 sudo rm -rf /root/.oh-my-zsh /root/.zsh
 
-# 4. Clean up thefuck (Optional)
-# echo "Removing thefuck..."
-# sudo pip3 uninstall -y thefuck
+# 4. Uninstall packages
+sudo apt-get purge --auto-remove zsh zsh-autosuggestions zsh-syntax-highlighting fzf
+sudo pip3 uninstall thefuck
 
-echo "--- Rollback Complete. Please RESTART YOUR TERMINAL. ---"
-echo "Your shell is now set back to /bin/bash."
+echo "Rollback complete. Please log out and log back in."
 ```
 
 -----
 
-## 🛡️ Exam Safety Note (OSCP/Similar)
+### 🎓 Exam Safety Note (OSCP/Proctored Exams)
 
-| Component | Installation/Setup | Exam Safety (Local vs. External) |
-| :--- | :--- | :--- |
-| **Zsh, git, fzf** | Installed from Kali's local APT repositories. | **SAFE** (Local tool) |
-| **`oh-my-zsh`** | Cloned from GitHub during setup. | **SAFE** (Local tool, uses no external services after installation) |
-| **Plugins** | Cloned from GitHub during setup. | **SAFE** (Local tool, uses no external services after installation) |
-| **`thefuck`** | Installed via `pip` (requires external PyPI access). | **NOT SAFE** (Requires external network access during exam, **Do NOT use during exam**) |
-| **All Aliases/Configs** | Configuration is **local-only**. | **SAFE** (Local files) |
+  * **100% Exam-Safe:**
 
-**Conclusion:** The core Zsh environment, including OMZ and all plugins, is **SAFE** for use in certification exams as it only relies on local scripts and binaries after the initial setup. **`thefuck`** is the only external service/tool that should be avoided or disabled during the exam itself, though the configuration allows it to be installed now. You can comment out the `eval $(thefuck --alias)` line in your `.zshrc` files for exam integrity.
+      * `zsh` (the shell itself)
+      * `oh-my-zsh` (local framework)
+      * `zsh-autosuggestions` (local scripts)
+      * `zsh-syntax-highlighting` (local scripts)
+      * `zsh-autocomplete` (local scripts)
+      * `fzf` (local binary)
+      * `fzf-tab` (local scripts)
+        These tools are all **local-only**. They do not make external network calls to "phone home" or use any cloud/AI services. They are glorified text processors and are perfectly safe and permitted.
+
+  * **Use with Caution:**
+
+      * `thefuck`: This tool's *core logic* is local, but some of its correction rules *can* query package managers (e.g., `apt search`) to find correct package names, which involves network access. While highly unlikely to be an issue, it's not 100% "offline" in all cases. It is **not** an AI tool. For maximum exam safety, you can disable it by commenting out the `eval $(thefuck --alias)` line in your `.zshrc`.
