@@ -85,11 +85,20 @@ fi
 
 # === 2. Install 'thefuck' (Optional) ===
 info "Installing 'thefuck' via pip3..."
-# Fix for "externally-managed-environment" error on modern Debian/Kali systems
-# We use the --break-system-packages flag as it's a global utility install.
-if ! sudo pip3 install -U thefuck --break-system-packages; then
-    warn "Failed to install 'thefuck'. Continuing without it. If you want 'thefuck', run: sudo pip3 install -U thefuck --break-system-packages"
+# Fix for "externally-managed-environment" error and ensure a clean exit status.
+# The output is redirected to a temporary file and suppressed to avoid hanging issues.
+if sudo pip3 install -U thefuck --break-system-packages > /tmp/thefuck_install.log 2>&1; then
+    success "'thefuck' installed successfully."
+else
+    # Check if the failure was a real error or just a warning/permission issue
+    if grep -q "Successfully installed thefuck" /tmp/thefuck_install.log; then
+        warn "'thefuck' installed, but there were minor warnings. Proceeding."
+    else
+        warn "Failed to install 'thefuck'. Continuing without it. Check /tmp/thefuck_install.log for details."
+    fi
 fi
+rm -f /tmp/thefuck_install.log
+
 
 # === 3. Define .zshrc Configuration ===
 # We define this ONCE. Using 'EOF' (with single quotes) prevents
