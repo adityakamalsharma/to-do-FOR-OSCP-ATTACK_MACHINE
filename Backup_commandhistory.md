@@ -1,4 +1,3 @@
-That's a fantastic final step for portability\! It means you'll have instant recall of all your commands across different machines—a huge time-saver.
 
 The feature you are referring to is called Zsh's **history file**, which is typically stored in `~/.zsh_history`. The trick for portability is to ensure this file is synchronized and loaded correctly on new systems.
 
