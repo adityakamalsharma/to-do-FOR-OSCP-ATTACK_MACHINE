@@ -32,8 +32,6 @@ We need to make a minor edit to your `~/.zshrc` and `/root/.zshrc` files to set 
 
 I've created a small script that will check for and add these standard Zsh history settings to both your user and root configuration files.
 
-http://googleusercontent.com/immersive_entry_chip/0
-
 
 ```
 #!/bin/bash
