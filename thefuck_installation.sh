@@ -30,16 +30,18 @@ info "STEP 1: Installing 'thefuck' globally using pip3..."
 
 # Check if pip3 is available and install TheFuck
 if command -v pip3 &> /dev/null; then
+    # Use '--break-system-packages' to bypass the "externally managed environment" error
     # Use 'sudo -H' to ensure the HOME environment variable isn't polluted during the installation
-    if ! sudo -H pip3 install thefuck; then
+    if ! sudo -H pip3 install thefuck --break-system-packages; then
         error_exit "Failed to install 'thefuck' via pip3. Check Python/pip installation."
     fi
     success "'thefuck' installed successfully."
 else
     # Suggest installation if pip3 is missing
     info "pip3 command not found. Attempting to install python3-pip first..."
-    if sudo apt-get update -qq && sudo apt-get install -y python3-pip; then
-        if ! sudo -H pip3 install thefuck; then
+    if sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip; then
+        # Use '--break-system-packages' after installing pip
+        if ! sudo -H pip3 install thefuck --break-system-packages; then
             error_exit "Failed to install 'thefuck' even after installing python3-pip."
         fi
         success "python3-pip and 'thefuck' installed successfully."
