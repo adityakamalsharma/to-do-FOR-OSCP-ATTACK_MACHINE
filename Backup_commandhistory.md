@@ -37,12 +37,37 @@ http://googleusercontent.com/immersive_entry_chip/0
 
 ```
 #!/bin/bash
-# Script to add TheFuck activation to Zsh config files for the current user and root.
+# Script to add Zsh History Portability settings to the user and root configurations.
+# This ensures history is saved and loaded reliably, making the ~/.zsh_history file portable.
 
 # --- Configuration ---
 USER_HOME="$HOME"
 ROOT_HOME="/root"
-THEFUCK_ACTIVATION='eval $(thefuck --alias)'
+
+# History settings block to be added to .zshrc
+# Using a standard multi-line variable assignment to replace Heredoc (EOF).
+ZSH_HISTORY_CONFIG="
+# ---------------------------------------------
+# Zsh History Configuration for Portability
+# ---------------------------------------------
+# Ensures history file is explicitly defined and loads/saves reliably.
+# The content of ~/.zsh_history can be copied to a new system for instant command history recall.
+
+# Explicitly set the history file path (Note: \$HOME is escaped to be interpreted by Zsh later)
+HISTFILE=\"\$HOME/.zsh_history\"
+
+# Set the maximum number of history entries to keep in memory and on disk
+HISTSIZE=10000
+SAVEHIST=10000
+
+# Options for history management:
+setopt appendhistory      # Append history to the history file (don't overwrite)
+setopt extendedhistory    # Save timestamps and command duration
+setopt hist_expiredups_first # Delete older duplicates first
+setopt hist_ignore_dups   # Don't record consecutive identical commands
+setopt hist_ignore_space  # Don't record commands starting with a space
+setopt sharehistory       # Share history among all open shells
+"
 
 # --- Helpers ---
 CYAN='\033[0;36m'
@@ -57,42 +82,51 @@ success() {
     echo -e "${GREEN}>>> [SUCCESS] $1${NC}"
 }
 
-# --- Step 1: Configure Current User's Zsh ---
-info "STEP 1: Configuring current user's Zsh (~/.zshrc)..."
+# Function to safely update a .zshrc file
+update_zshrc() {
+    local config_file="$1"
+    local user_name="$2"
+    local sudo_prefix=""
 
-# Check if the line is already present before appending
-if ! grep -qF "$THEFUCK_ACTIVATION" "$USER_HOME/.zshrc" 2> /dev/null; then
-    echo -e "\n# TheFuck activation (type 'fuck' after a mistyped command)" >> "$USER_HOME/.zshrc"
-    echo "$THEFUCK_ACTIVATION" >> "$USER_HOME/.zshrc"
-    success "TheFuck activation added to $USER_HOME/.zshrc."
-else
-    info "TheFuck activation already found in $USER_HOME/.zshrc. Skipping modification."
-fi
+    if [[ "$config_file" == *"/root"* ]]; then
+        sudo_prefix="sudo"
+    fi
 
-# --- Step 2: Configure Root User's Zsh ---
-info "STEP 2: Configuring root user's Zsh (/root/.zshrc)..."
+    # Check for the unique identifying marker in the config block
+    if ! $sudo_prefix grep -qF "Zsh History Configuration for Portability" "$config_file" 2> /dev/null; then
+        # Append the configuration block using tee to handle permissions
+        # The ZSH_HISTORY_CONFIG variable contains the entire block, including newlines.
+        echo "$ZSH_HISTORY_CONFIG" | $sudo_prefix tee -a "$config_file" > /dev/null
+        success "History portability configuration added to $config_file."
+    else
+        info "History portability configuration already found in $config_file. Skipping modification."
+    fi
+}
 
-# Check if the line is already present before appending (requires sudo for root's file)
-if ! sudo grep -qF "$THEFUCK_ACTIVATION" "$ROOT_HOME/.zshrc" 2> /dev/null; then
-    # Use sudo tee to append the line to the root-owned file
-    echo -e "\n# TheFuck activation (type 'fuck' after a mistyped command)" | sudo tee -a "$ROOT_HOME/.zshrc" > /dev/null
-    echo "$THEFUCK_ACTIVATION" | sudo tee -a "$ROOT_HOME/.zshrc" > /dev/null
-    success "TheFuck activation added to $ROOT_HOME/.zshrc."
-else
-    info "TheFuck activation already found in $ROOT_HOME/.zshrc. Skipping modification."
-fi
+# --- Main Execution ---
+
+# 1. Configure Current User's Zsh
+info "Configuring current user's Zsh (~/.zshrc)..."
+update_zshrc "$USER_HOME/.zshrc" "$USER_NAME"
+
+# 2. Configure Root User's Zsh
+info "Configuring root user's Zsh (/root/.zshrc)..."
+update_zshrc "$ROOT_HOME/.zshrc" "root"
 
 # --- Final Instructions ---
-info "--- Configuration Complete ---"
-info "TheFuck is now configured for both users."
-info "To activate the changes, you must source the configuration or restart the shell for each user."
-echo -e "\n**For the current user:**"
+info "--- History Portability Setup Complete ---"
+info "To finalize the setup, please follow these steps:"
+
+echo -e "\n1. **Reload your shells** (for both user and root):"
 echo -e "   source ~/.zshrc"
-echo -e "\n**For the root user (after running 'sudo su -'):**"
-echo -e "   source /root/.zshrc"
-echo -e "\nTest it by typing a wrong command (e.g., 'apt-get updtae') and then typing 'fuck'!"
+
+echo -e "\n2. **Transfer your history**:"
+echo -e "   - Back up your **~/.zsh_history** file (e.g., to a USB drive)."
+echo -e "   - On a new system, copy your backed-up history file into the new system's home directory (as **~/.zsh_history**)."
+echo -e "   - As long as Zsh and this configuration block are running, your old commands will instantly be available for autocompletion."
 
 exit 0
+
 ```
 
 ### How to Apply the Final Configuration
