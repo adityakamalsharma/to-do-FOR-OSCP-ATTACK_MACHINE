@@ -1,7 +1,3 @@
-That's a very common and expected outcome after a script like this runs\!
-
-[cite\_start]The good news is that the script ran flawlessly, meaning your dependencies are installed, your plugins are cloned, and **Zsh is your new shell**[cite: 27, 28]. The **`kali%`** prompt you see confirms you are in Zsh.
-
 ### ⚠️ The Problem: Missing Theme
 
 The message `[oh-my-zsh] theme 'kali' not found` and the prompt `kali%` indicate a simple configuration issue:
