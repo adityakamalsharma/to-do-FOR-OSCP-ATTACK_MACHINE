@@ -4,6 +4,10 @@ https://github.com/ssstonebraker/Pentest-Service-Enumeration.git
 ```
 THIS HELPS IN VIEWING CHEAT SHEET IN TERMINAL.
 
+### GO TO
+```
+/ROOT/.PSE
+```
 ---
 ## NOW, MAKE CUSTOM FILES FOR EACH OF THE FOLLOWING TOPICS:
 
