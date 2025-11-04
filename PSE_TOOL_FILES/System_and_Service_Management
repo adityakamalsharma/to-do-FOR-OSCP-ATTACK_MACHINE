@@ -1,0 +1,11 @@
+
+adduser
+Add Linux user (interactive):adduser \<uname\>
+net-user
+Add Windows user:net user hacker hacker123 /add
+Add Windows user to Administrators:net localgroup Administrators hacker /add
+Add Windows user to Remote Desktop Users:net localgroup "Remote Desktop Users" hacker /ADD
+Check local administrators:net localgroup Administrators
+useradd
+Add Linux user:useradd \<uname\>
+Add Linux user to specific group/UID:useradd -u \<UID\> -g \<group\> \<uname\>

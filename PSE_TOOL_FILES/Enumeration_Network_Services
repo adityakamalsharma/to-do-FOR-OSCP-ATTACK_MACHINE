@@ -1,0 +1,53 @@
+impacket-services
+Enumerate services:services.py [domain]/[user]:[Password/Password Hash]@[Target IP Address] [Action]
+nbtscan
+Scan subnet for NetBIOS:sudo nbtscan -r 192.168.50.0/24
+net view
+View shares on Windows:net view \<computername/IP\> /all
+nmap
+Basic scan (scripts, versions):nmap -sC -sV \<IP\> -v
+Complete scan (all ports, aggressive):nmap -T4 -A -p- \<IP\> -v
+Run 'vuln' scripts on port 443:sudo nmap -sV -p 443 --script "vuln" 192.168.50.124
+Run specific NSE script:sudo nmap --script="name" \<IP\>
+Enumerate SMB with NSE script:nmap -p445 --script="name" $IP
+Enumerate NFS shares:nmap -sV --script=nfs-showmount \<IP\>
+Full UDP scan (aggressive):sudo nmap \<IP\> -A -T4 -p- -sU -v -oN nmap-udpscan.txt
+Scan for winrm ports:nmap -p5985,5986 \<IP\>
+psloggedon
+See remote user logons:.\\PsLoggedon.exe \<computername\>
+rpcclient
+Connect to RPC (user):rpcclient -U=user $IP
+Connect to RPC (anonymous):rpcclient -U="" $IP
+Show server info (rpcclient):srvinfo
+Enumerate domain users (rpcclient):enumdomusers
+Enumerate privileges (rpcclient):enumpriv
+Query user details (rpcclient):queryuser \<user\>
+Get password policy (rpcclient):getuserdompwinfo \<RID\>
+Lookup user SID (rpcclient):lookupnames \<user\>
+Create domain user (rpcclient):createdomuser \<username\>
+Delete domain user (rpcclient):deletedomuser \<username\>
+Enumerate domains (rpcclient):enumdomains
+Enumerate domain groups (rpcclient):enumdomgroups
+Query group details (rpcclient):querygroup \<group-RID\>
+Query user descriptions (rpcclient):querydispinfo
+Enumerate shares (rpcclient):netshareenum
+Enumerate all shares (rpcclient):netshareenumall
+Enumerate all SIDs (rpcclient):lsaenumsid
+showmount
+Enumerate NFS shares from attacker:showmount -e \<IP\>
+View mountable shares (on target):cat /etc/exports
+smbmap
+Enumerate SMB (host):smbmap -H \<target\_ip\>
+Enumerate SMB (credentials):smbmap -H \<target\_ip\> -u \<username\> -p \<password\>
+Enumerate SMB (domain):smbmap -H \<target\_ip\> -u \<username\> -p \<password\> -d \<domain\>
+Enumerate SMB (share):smbmap -H \<target\_ip\> -u \<username\> -p \<password\> -r \<share\_name\>
+smtp-user-enum
+Enumerate SMTP users (VRFY):smtp-user-enum -M VRFY -U username.txt -t \<IP\>
+snmpcheck
+Enumerate SNMP (public):snmpcheck -t \<IP\> -c public
+snmpwalk
+Dump entire MIB tree:snmpwalk -c public -v1 -t 10 \<IP\>
+Enumerate Windows users (SNMP):snmpwalk -c public -v1 \<IP\> 1.3.6.1.4.1.77.1.2.25
+Enumerate Windows processes (SNMP):snmpwalk -c public -v1 \<IP\> 1.3.6.1.2.1.25.4.2.1.2
+Enumerate installed software (SNMP):snmpwalk -c public -v1 \<IP\> 1.3.6.1.2.1.25.6.3.1.2
+Enumerate open TCP ports (SNMP):snmpwalk -c public -v1 \<IP\> 1.3.6.1.2.1.6.13.1.3

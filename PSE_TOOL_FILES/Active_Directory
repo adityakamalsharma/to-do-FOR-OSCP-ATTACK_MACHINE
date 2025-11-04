@@ -1,0 +1,26 @@
+
+bloodhound-python
+Run BloodHound-Python collector:bloodhound-python -u 'uname' -p 'pass' -ns \<rhost\> -d \<domain-name\> -c all
+impacket-lookupsid
+Enumerate users on target:lookupsid.py [domain]/[user]:[password/password hash]@[Target IP Address]
+ldapdomaindump
+Dump LDAP domain info:sudo ldapdomaindump ldaps://\<IP\> -u 'username' -p 'password'
+ldapsearch
+Anonymous LDAP search (root):ldapsearch -x -H ldap://\<IP\>:\<port\>
+Anonymous LDAP search (domain):ldapsearch -x -H ldap://\<IP\> -D '' -w '' -b "DC=\<1\_SUBDOMAIN\>,DC=\<TLD\>"
+Authenticated LDAP search (domain):ldapsearch -x -H ldap://\<IP\> -D '\<DOMAIN\>\<username\>' -w '\<password\>' -b "DC=\<1\_SUBDOMAIN\>,DC=\<TLD\>"
+Authenticated LDAP search (Users):ldapsearch -x -H ldap://\<IP\> -D '\<DOMAIN\>\<username\>' -w '\<password\>' -b "CN=Users,DC=\<1\_SUBDOMAIN\>,DC=\<TLD\>"
+Authenticated LDAP search (Computers):ldapsearch -x -H ldap://\<IP\> -D '\<DOMAIN\>\<username\>' -w '\<password\>' -b "CN=Computers,DC=\<1\_SUBDOMAIN\>,DC=\<TLD\>"
+Authenticated LDAP search (Domain Admins):ldapsearch -x -H ldap://\<IP\> -D '\<DOMAIN\>\<username\>' -w '\<password\>' -b "CN=Domain Admins,CN=Users,DC=\<1\_SUBDOMAIN\>,DC=\<TLD\>"
+Authenticated LDAP search (Domain Users):ldapsearch -x -H ldap://\<IP\> -D '\<DOMAIN\>\<username\>' -w '\<password\>' -b "CN=Domain Users,CN=Users,DC=\<1\_SUBDOMAIN\>,DC=\<TLD\>"
+Authenticated LDAP search (Enterprise Admins):ldapsearch -x -H ldap://\<IP\> -D '\<DOMAIN\>\<username\>' -w '\<password\>' -b "CN=Enterprise Admins,CN=Users,DC=\<1\_SUBDOMAIN\>,DC=\<TLD\>"
+Authenticated LDAP search (Administrators):ldapsearch -x -H ldap://\<IP\> -D '\<DOMAIN\>\<username\>' -w '\<password\>' -b "CN=Administrators,CN=Builtin,DC=\<1\_SUBDOMAIN\>,DC=\<TLD\>"
+Authenticated LDAP search (Remote Desktop Users):ldapsearch -x -H ldap://\<IP\> -D '\<DOMAIN\>\<username\>' -w '\<password\>' -b "CN=Remote Desktop Users,CN=Builtin,DC=\<1\_SUBDOMAIN\>,DC=\<TLD\>"
+plumhound
+Test PlumHound connection:sudo python3 plumhound.py --easy -p \<neo4j-password\>
+Run PlumHound default tasks:python3 PlumHound.py -x tasks/default.tasks -p \<neo4jpass\>
+windapsearch
+Find computers (windapsearch):python3 windapsearch.py --dc-ip \<IP address\> -u \<username\> -p \<password\> --computers
+Find groups (windapsearch):python3 windapsearch.py --dc-ip \<IP address\> -u \<username\> -p \<password\> --groups
+Find users (windapsearch):python3 windapsearch.py --dc-ip \<IP address\> -u \<username\> -p \<password\> --da
+Find privileged users (windapsearch):python3 windapsearch.py --dc-ip \<IP address\> -u \<username\> -p \<password\> --privileged-users

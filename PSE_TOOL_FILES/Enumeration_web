@@ -1,0 +1,3 @@
+gobuster
+Enumerate directories:gobuster dir -u [http://example.com](http://example.com) -w /path/to/wordlist.txt
+Identify API endpoints:gobuster dir -u [http://192.168.50.16:5002](http://192.168.50.16:5002) -w /usr/share/wordlists/dirb/big.txt -p pattern
