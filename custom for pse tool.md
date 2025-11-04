@@ -5,6 +5,9 @@ https://github.com/ssstonebraker/Pentest-Service-Enumeration.git
 THIS HELPS IN VIEWING CHEAT SHEET IN TERMINAL.
 
 ---
+## NOW, MAKE CUSTOM FILES FOR EACH OF THE FOLLOWING TOPICS:
+
+---
 
 ## Enumeration (DNS)
 
