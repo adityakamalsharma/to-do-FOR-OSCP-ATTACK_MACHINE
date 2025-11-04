@@ -1,3 +1,10 @@
+## FIRST INSTALL PSE TOOL FROM:
+```
+https://github.com/ssstonebraker/Pentest-Service-Enumeration.git
+```
+THIS HELPS IN VIEWING CHEAT SHEET IN TERMINAL.
+
+---
 
 ## Enumeration (DNS)
 
