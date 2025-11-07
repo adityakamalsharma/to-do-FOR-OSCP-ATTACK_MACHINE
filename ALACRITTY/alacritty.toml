@@ -1,0 +1,57 @@
+# This is your Alacritty configuration file in TOML format.
+
+[window]
+# Sets the default window size in lines (rows) and columns (characters).
+dimensions = { columns = 120, lines = 40 }
+
+# Adds a bit of space between the text and the window border.
+padding = { x = 5, y = 5 }
+
+# Sets background opacity. 1.0 is fully opaque.
+# 0.95 can be useful for seeing notes behind your terminal.
+opacity = 1.0
+
+[font]
+# --- FONT SIZE ---
+# This sets the default font size.
+size = 15.0
+
+# You can also change the font. 'monospace' is a good default.
+# normal = { family = "monospace", style = "Regular" }
+
+[scrolling]
+# --- OSCP OPTIMIZATION ---
+# Increases the terminal scrollback buffer.
+# The default is 10,000. 50,000 is better for reviewing large
+# nmap scans or tool output without losing the beginning.
+history = 100000
+
+[terminal]
+shell = { program = "/bin/zsh" }
+
+[selection]
+# --- MOUSE COPY OPTIMIZATION ---
+# If set to 'true', text is copied to the clipboard
+# immediately upon selection (letting go of the mouse).
+#
+# !! IMPORTANT FOR ZELLIJ !!
+# This will ONLY work if you hold 'Shift' while selecting.
+# Holding 'Shift' lets Alacritty handle the selection, bypassing zellij.
+save_to_clipboard = true
+
+# [shell]
+# --- OSCP OPTIMIZATION (Optional) ---
+# Sets the directory Alacritty starts in.
+# You can uncomment this and change it to your main OSCP folder.
+# working_directory = "/home/your-user/oscp/machines"
+
+# On Linux, this is normally not needed, but uncomment if your shell is wrong.
+# program = "/bin/zsh"
+
+
+
+# THEME
+[general]
+import = [
+    "~/.config/alacritty/themes/themes/dracula_plus.toml"
+]
