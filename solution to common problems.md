@@ -62,3 +62,27 @@ If you are looking for more advice on practical Linux environment setup for pene
 http://googleusercontent.com/youtube_content/4
 
 ---
+
+
+
+---
+
+
+## Universal $PATH Template
+
+Here is a universal snippet you can save.
+
+Syntax:
+Bash
+
+export PATH="[directory_to_add]:$PATH"
+
+Explanation:
+
+    export: Makes the variable available to all programs launched from this shell.
+
+    PATH=: Sets the PATH variable.
+
+    "[directory_to_add]": Replace this with the absolute path to the directory containing the binaries (e.g., /opt/custom-tools/bin, $HOME/go/bin).
+
+    :$PATH: This is the most critical part. The colon (:) is the separator. Appending $PATH adds all your existing paths after the new one. If you forget this, you will overwrite your entire system path, and commands like ls and cd will stop working in that session.
