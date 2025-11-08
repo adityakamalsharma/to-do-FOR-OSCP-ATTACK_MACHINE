@@ -1,2 +1,2 @@
-which [Program]
-sudo ln -s [PATH_TO_ORIGINAL_EXECUTABLE] /usr/local/bin/[YOUR_NEW_SHORTCUT_NAME]
+- which [Program]
+- sudo ln -s [PATH_TO_ORIGINAL_EXECUTABLE] /usr/local/bin/[YOUR_NEW_SHORTCUT_NAME]
